@@ -487,8 +487,7 @@ def get_lables(u_temp, i_temp, k=1.0):
     return max_item, lable_set
 
 
-#if __name__ == '__main__':
-if True:
+if __name__ == '__main__':
     np.random.seed(2019)
     random_seed = 2019
     u_train = np.array(tp_train['uid'], dtype=np.int32)
