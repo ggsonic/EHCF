@@ -33,7 +33,7 @@ usercount, itemcount = get_count(tp_all, 'uid'), get_count(tp_all, 'sid')
 
 n_users, n_items = usercount.shape[0], itemcount.shape[0]
 
-print n_users, n_items
+print(n_users, n_items)
 
 
 def _writeline_and_time(s):
@@ -247,7 +247,8 @@ def dev_cold(u_train,i_train,tset, train_m, test_m):
 
     trset = {}
     for i in range(len(u_train)):
-        if trset.has_key(u_train[i]):
+        #if trset.has_key(u_train[i]):
+        if u_train[i] in trset:
             trset[u_train[i]].append(i_train[i])
         else:
             trset[u_train[i]] = [i_train[i]]
@@ -325,7 +326,7 @@ def dev_cold(u_train,i_train,tset, train_m, test_m):
         ndcg100[l]=np.hstack(ndcg100[l])
 
     for l in range(len(recall100)):
-        print np.mean(recall100[l]),np.mean(ndcg100[l])
+        print(np.mean(recall100[l]),np.mean(ndcg100[l]))
 
 
 def dev_step(tset, train_m, test_m):
@@ -333,7 +334,9 @@ def dev_step(tset, train_m, test_m):
     Evaluates model on a dev set
 
     """
-    user_te = np.array(tset.keys())
+    #user_te = np.array(tset.keys())
+    user_te = np.array(list(tset.keys()))
+    #print(len(tset),len(tset.keys()),user_te.shape)
     user_te2 = user_te[:, np.newaxis]
 
     ll = int(len(user_te) / 128) + 1
@@ -426,9 +429,9 @@ def dev_step(tset, train_m, test_m):
     ndcg100 = np.hstack(ndcg100)
     ndcg200 = np.hstack(ndcg200)
 
-    print np.mean(recall50), np.mean(ndcg50)
-    print np.mean(recall100), np.mean(ndcg100)
-    print np.mean(recall200), np.mean(ndcg200)
+    print(np.mean(recall50), np.mean(ndcg50))
+    print(np.mean(recall100), np.mean(ndcg100))
+    print(np.mean(recall200), np.mean(ndcg200))
     f1.write(str(np.mean(recall100)) + ' ' + str(np.mean(ndcg100)) + '\n')
     f1.flush()
 
@@ -441,12 +444,14 @@ def get_train_instances1(view_lable, cart_lable, buy_lable):
     for i in buy_lable.keys():
         user_train.append(i)
         buy_item.append(buy_lable[i])
-        if not view_lable.has_key(i):
+        #if not view_lable.has_key(i):
+        if i not in view_lable:
             view_item.append([n_items] * max_item_view)
         else:
             view_item.append(view_lable[i])
 
-        if not cart_lable.has_key(i):
+        #if not cart_lable.has_key(i):
+        if i not in cart_lable:
             cart_item.append([n_items] * max_item_cart)
         else:
             cart_item.append(cart_lable[i])
@@ -463,7 +468,8 @@ def get_lables(u_temp, i_temp, k=1.0):
     lable_set = {}
     max_item = 0
     for i in range(len(u_temp)):
-        if lable_set.has_key(u_temp[i]):
+        #if lable_set.has_key(u_temp[i]):
+        if u_temp[i] in lable_set:
             lable_set[u_temp[i]].append(i_temp[i])
         else:
             lable_set[u_temp[i]] = [i_temp[i]]
@@ -481,10 +487,10 @@ def get_lables(u_temp, i_temp, k=1.0):
     return max_item, lable_set
 
 
-if __name__ == '__main__':
+#if __name__ == '__main__':
+if True:
     np.random.seed(2019)
     random_seed = 2019
-
     u_train = np.array(tp_train['uid'], dtype=np.int32)
     i_train = np.array(tp_train['sid'], dtype=np.int32)
     u_test = np.array(tp_test['uid'], dtype=np.int32)
@@ -503,15 +509,20 @@ if __name__ == '__main__':
     count = np.ones(len(u_test))
     test_m = scipy.sparse.csr_matrix((count, (u_test, i_test)), dtype=np.int16, shape=(n_users, n_items))
 
+
     for i in range(len(u_test)):
-        if tset.has_key(u_test[i]):
+        #if tset.has_key(u_test[i]):
+        if u_test[i] in tset:
             tset[u_test[i]].append(i_test[i])
         else:
             tset[u_test[i]] = [i_test[i]]
 
+    #print(len(u_test))
+    #print(u_test[1],tset[1])
     max_item_view, view_lable = get_lables(u_view, i_view)
     max_item_cart, cart_lable = get_lables(u_cart, i_cart)
     max_item_buy, buy_lable = get_lables(u_train, i_train)
+    #print('---',len(tset))
 
     batch_size = 256
     with tf.Graph().as_default():
@@ -533,7 +544,7 @@ if __name__ == '__main__':
             user_train1, view_item1, cart_item1, buy_item1 = get_train_instances1(view_lable, cart_lable, buy_lable)
 
             for epoch in range(505):
-                print epoch
+                print(epoch)
                 start_t = _writeline_and_time('\tUpdating...')
 
                 shuffle_indices = np.random.permutation(np.arange(len(user_train1)))
@@ -560,10 +571,11 @@ if __name__ == '__main__':
                     loss[2] += loss3
                 print('\r\tUpdating: time=%.2f'
                       % (time.time() - start_t))
-                print 'loss,loss_no_reg,loss_reg ', loss[0] / ll, loss[1] / ll, loss[2] / ll
+                print('loss,loss_no_reg,loss_reg ', loss[0] / ll, loss[1] / ll, loss[2] / ll)
 
                 if epoch < 500:
                     if epoch % 10 == 0:
+                        print(epoch,len(tset))
                         dev_step(tset, train_m, test_m)
                         dev_cold(u_train,i_train, tset, train_m, test_m)
                 if epoch >= 500:
